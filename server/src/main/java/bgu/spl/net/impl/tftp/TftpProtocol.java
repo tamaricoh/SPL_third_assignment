@@ -18,7 +18,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private boolean loggedIn = false;
 
     private TftpFileOutputStream fileToWrite; // if we want to write more then 512 bytes.
-    private TftpFileInputStream fileToRead; // gor RRQ and DIRQ
+    private TftpFileInputStream fileToRead; // for RRQ and DIRQ
 
     @Override
     public void start(int connectionId, Connections<byte[]> connections) {
