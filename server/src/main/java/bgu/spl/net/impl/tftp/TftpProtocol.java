@@ -141,7 +141,26 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         short numOfBlocks =  ( short ) ((( short ) message [2]) << 8 | ( short ) ( message [3]) );
         byte[] data = Arrays.copyOfRange(message, 4, Size+4);
         // freate file, write to it, create ACK packet--------------------------------------
-        this.fileToRead = null;
+        // this.fileToRead = null;
+
+        // if (fileWriter == null) {
+        //     return;
+        // }
+
+        // short packetSize = TFTPPacket.bytesToShort(msgBody[0], msgBody[1]);
+        // short blockNum = TFTPPacket.bytesToShort(msgBody[2], msgBody[3]);
+        // byte[] data = Arrays.copyOfRange(msgBody, 4, packetSize+4);
+
+        // Boolean done = false;
+        // try {
+        //     done = fileWriter.Write(data);
+        // } catch (IOException e) {fileWriter = null; return;};
+
+        // connections.send(connectionId, TFTPPacket.ACKFor(blockNum));
+        // if (done) {
+        //     sendBCAST(fileWriter.GetFileName(), true);
+        //     fileWriter = null;
+        // }
     }
 
     public void ACKoperation(byte[] message) {

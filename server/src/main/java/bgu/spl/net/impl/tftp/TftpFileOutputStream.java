@@ -7,7 +7,7 @@ import java.io.FileNotFoundException;
 
 public class TftpFileOutputStream {
 
-    private FileOutputStream fileStrem;
+    private FileOutputStream fileStream;
 
     public TftpFileOutputStream(String filePath) throws FileNotFoundException, FileAlreadyExistsException{
         File file = new File(filePath);
@@ -15,6 +15,6 @@ public class TftpFileOutputStream {
             throw new FileAlreadyExistsException(filePath);
         }
 
-        this.fileStrem = new FileOutputStream(file);
+        this.fileStream = new FileOutputStream(file);
     }
 }

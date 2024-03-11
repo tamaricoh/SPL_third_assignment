@@ -14,7 +14,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
 
     @Override
     public byte[] decodeNextByte(byte nextByte) {
-        if (nextByte == '0' && TftpEnum.TFTPRequestEndsWithZero(opCode)){ // and the msg needs to end with a zero
+        if (nextByte == '\0' && TftpEnum.TFTPRequestEndsWithZero(opCode)){ // and the msg needs to end with a zero
             return returnMSG();
         }
 
