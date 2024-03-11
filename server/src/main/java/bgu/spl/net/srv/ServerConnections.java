@@ -1,7 +1,7 @@
 package bgu.spl.net.srv;
-import java.util.concurrent.ConcurrentLinkedQueue;        // maybe we should use a concurrent type of list?\
+import java.util.concurrent.ConcurrentLinkedQueue;     
 
-import java.io.IOException;
+import java.io.IOException;                                // might wanna insert some expectitions?
 
 class ServerConnections<T> implements Connections<T> {
     private ConcurrentLinkedQueue<ConnectionPair<Integer,ConnectionHandler<T>>> ClientConnections;
@@ -12,9 +12,10 @@ class ServerConnections<T> implements Connections<T> {
     }
 
     public void connect(int connectionId, ConnectionHandler<T> handler){    //Adds the client to the Map if it has a new id
-        ConnectionPair<Integer,ConnectionHandler<T>> clientPair = new ConnectionPair(connectionId, handler);
+        ConnectionPair<Integer,ConnectionHandler<T>> clientPair = new ConnectionPair<Integer,ConnectionHandler<T>>(connectionId, handler);
         if(findClient(connectionId) == null){
             ClientConnections.add(clientPair);
+            //send(connectionId, 0))          //should sent ACK
         }
     }
 
@@ -30,7 +31,14 @@ class ServerConnections<T> implements Connections<T> {
     public void disconnect(int connectionId){                               //Removes the client from the ClientConnections
         ConnectionPair<Integer,ConnectionHandler<T>> client = findClient(connectionId);
         if(client != null){
-            ClientConnections.remove(client);
+            ClientConnections.remove(client);     
+                                                      //should send ACK
+                                        
+            try {
+                client.getSecond().close();
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
         }
     }
 
