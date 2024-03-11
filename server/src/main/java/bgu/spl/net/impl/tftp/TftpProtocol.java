@@ -1,5 +1,6 @@
 package bgu.spl.net.impl.tftp;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -79,7 +80,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     public void RRQoperation(byte[] message) {
         synchronized(connections){ // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
-                String fileName = pathToCurrDir+MSGdecoder(message);
+                String fileName = pathToCurrDir+MSGencoder(message);
                 TftpFileInputStream fileStream;
                 try {
                     fileStream = new TftpFileInputStream(fileName);
@@ -88,7 +89,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     return;
                 }
 
-                if (!loggedIn){ // if client is not logged
+                if (!loggedIn){ // if client is not logged, he can't make operations
                     // send error ---------------------------------
                     return;
                 }
@@ -104,11 +105,11 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     public void WRQoperation(byte[] message) {
         synchronized(connections){ // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
-                String fileName = pathToCurrDir+MSGdecoder(message);
+                String fileName = pathToCurrDir+MSGencoder(message);
                 TftpFileOutputStream fileWrite;
                 try {
                     fileWrite = new TftpFileOutputStream(fileName);
-                } catch (FileNotFoundException e){
+                } catch (FileNotFoundException e){ 
                     // send error ---------------------------------
                     return;
                 } catch(FileAlreadyExistsException e) {
@@ -116,7 +117,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     return;
                 }
 
-                if (!loggedIn){ // if client is not logged
+                if (!loggedIn){ // if client is not logged, he can't make operations
                     // send error ---------------------------------
                     return;
                 }
@@ -153,7 +154,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void LOGRQoperation(byte[] message) {
-        String userName = new String(message, StandardCharsets.UTF_8);
+        String userName = MSGencoder(message);
         synchronized(connections) { // so the client wouldn't get another packet
             if (this.loggedInUsers.containsKey(userName)){
                 // send error - user already logged ----------------------------------
@@ -167,7 +168,29 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DELRQoperation(byte[] message) {
+        synchronized(connections) { // so the client wouldn't get another packet
+            synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
+                String fileName = pathToCurrDir+MSGencoder(message);
+                File file = new File(fileName);
+                if (!file.exists()) {
+                    // send error --------------------------------- file not found
+                    return;
+                }
 
+                if (!loggedIn) { // if client is not logged, he can't make operations
+                    // send error ---------------------------------
+                    return;
+                }
+
+                if (!file.delete()){
+                    // send error ---------------------------------
+                    return;
+                }
+
+                // create the ACK packet-------------------------
+                // send it ---------------------------------
+            }
+        }
     }
 
     public void BCASToperation(byte[] message) {
@@ -185,7 +208,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         }
     }
 
-    public String MSGdecoder(byte[] message){
+    public String MSGencoder(byte[] message){
         return new String(message, StandardCharsets.UTF_8);
     }    
 }
