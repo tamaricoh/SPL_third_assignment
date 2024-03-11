@@ -1,5 +1,6 @@
 package bgu.spl.net.impl.tftp;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +21,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
     private HashMap<String, Integer> loggedInUsers = new HashMap<>(); // contain all logged users, // <userName, connectionID>
     private boolean loggedIn = false;
+    private String loggedUser = "";
 
     private TftpFileOutputStream fileToWrite; // if we want to write more then 512 bytes.
     private TftpFileInputStream fileToRead; // for RRQ and DIRQ
@@ -78,7 +80,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     public void RRQoperation(byte[] message) {
         synchronized(connections){ // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
-                String fileName = pathToCurrDir+MSGdecoder(message);
+                String fileName = pathToCurrDir+MSGencoder(message);
                 TftpFileInputStream fileStream;
                 try {
                     fileStream = new TftpFileInputStream(fileName);
@@ -87,14 +89,16 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     return;
                 }
 
-                if (!loggedIn){ // if client is not logged
-                    // send error ---------------------------------
+                if (loggedIn){ // if user is not logged - do nothing
+                    this.fileToRead = fileStream;
+                    // create the data packet-------------------------
+                    // send it ---------------------------------
                     return;
                 }
+                // send error ---------------------------------
+                return;
 
-                this.fileToRead = fileStream;
-                // create the data packet-------------------------
-                // send it ---------------------------------
+                
             }
         }
 
@@ -103,11 +107,11 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     public void WRQoperation(byte[] message) {
         synchronized(connections){ // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
-                String fileName = pathToCurrDir+MSGdecoder(message);
+                String fileName = pathToCurrDir+MSGencoder(message);
                 TftpFileOutputStream fileWrite;
                 try {
                     fileWrite = new TftpFileOutputStream(fileName);
-                } catch (FileNotFoundException e){
+                } catch (FileNotFoundException e){ 
                     // send error ---------------------------------
                     return;
                 } catch(FileAlreadyExistsException e) {
@@ -115,14 +119,15 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     return;
                 }
 
-                if (!loggedIn){ // if client is not logged
-                    // send error ---------------------------------
+                if (loggedIn){ // if user is not logged - do nothing
+                    this.fileToWrite = fileWrite; // if we want to write more then 512 bytes.
+                    // create the ACK packet-------------------------
+                    // send it ---------------------------------
                     return;
                 }
-
-                this.fileToWrite = fileWrite; // if we want to write more then 512 bytes.
-                // create the ACK packet-------------------------
-                // send it ---------------------------------
+                // send error ---------------------------------
+                return;
+                
             
             }
         }
@@ -136,7 +141,26 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         short numOfBlocks =  ( short ) ((( short ) message [2]) << 8 | ( short ) ( message [3]) );
         byte[] data = Arrays.copyOfRange(message, 4, Size+4);
         // freate file, write to it, create ACK packet--------------------------------------
-        this.fileToRead = null;
+        // this.fileToRead = null;
+
+        // if (fileWriter == null) {
+        //     return;
+        // }
+
+        // short packetSize = TFTPPacket.bytesToShort(msgBody[0], msgBody[1]);
+        // short blockNum = TFTPPacket.bytesToShort(msgBody[2], msgBody[3]);
+        // byte[] data = Arrays.copyOfRange(msgBody, 4, packetSize+4);
+
+        // Boolean done = false;
+        // try {
+        //     done = fileWriter.Write(data);
+        // } catch (IOException e) {fileWriter = null; return;};
+
+        // connections.send(connectionId, TFTPPacket.ACKFor(blockNum));
+        // if (done) {
+        //     sendBCAST(fileWriter.GetFileName(), true);
+        //     fileWriter = null;
+        // }
     }
 
     public void ACKoperation(byte[] message) {
@@ -148,25 +172,79 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DIRQoperation(byte[] message) {
+        synchronized(connections) { // so the client wouldn't get another packet
+            if (loggedIn) { // if user is not logged - do nothing
+                synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
+                    // SOME NOTES BEFORE IMPLEMENTATION:
+                    // 1) this should build a DATA packet, so we need to know the packet size.
+                    // 2) byte 0 is dividing the files names
 
+                    int packetSize = 0;
+                    File[] files = new File(pathToCurrDir).listFiles();
+                    for(File file : files) {
+                        packetSize += file.getName().getBytes().length + 1; // + 1 because byte 0 is dividing the files
+                    }
+
+                    byte[] data = new byte[packetSize]; // this is the 4th part ot the data packet
+                    // create the data bytes array :
+                    int index = 0; // loop while index < packetSize
+                    for(File file : files){
+                        for (byte byteB : file.getName().getBytes()){
+                            data[index] = byteB;
+                            index++;
+                        }
+                        data[index] = '\0'; // because byte 0 is dividing the files
+                        index++;
+                    }
+
+                    // create DATA packet----------------------
+                    // SEND IT
+                }
+            }
+            return;
+        }
     }
 
     public void LOGRQoperation(byte[] message) {
-        String userName = new String(message, StandardCharsets.UTF_8);
+        String userName = MSGencoder(message);
         synchronized(connections) { // so the client wouldn't get another packet
             if (this.loggedInUsers.containsKey(userName)){
-                // send error - user already logged
+                // send error - user already logged ----------------------------------
                 return;
             }
             loggedInUsers.put(userName, this.connectionId);
+            this.loggedUser = userName;
             this.loggedIn = true;
-            // send ACK
+            // send ACK packet-------------------------
         }
-        
     }
 
     public void DELRQoperation(byte[] message) {
+        synchronized(connections) { // so the client wouldn't get another packet
+            synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
+                String fileName = pathToCurrDir+MSGencoder(message);
+                File file = new File(fileName);
+                if (!file.exists()) {
+                    // send error --------------------------------- file not found
+                    return;
+                }
 
+                if (loggedIn) { // if client is not logged, he can't make operations
+                    
+                    if (!file.delete()){
+                        // send error ---------------------------------
+                        return;
+                    }
+    
+                    // create the ACK packet-------------------------
+                    // send it ---------------------------------
+                    return;
+                }
+                // send error ---------------------------------
+                return;
+                
+            }
+        }
     }
 
     public void BCASToperation(byte[] message) {
@@ -174,16 +252,17 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DISCoperation(byte[] message) {
-
+        synchronized(connections) { // so the client wouldn't get another packet
+            if (loggedIn) { // if user is not logged - do nothing
+                loggedInUsers.remove(this.loggedUser);
+                shouldTerminate = true;
+                // send ACK packet-------------------------
+            }
+            return;
+        }
     }
 
-    public String MSGdecoder(byte[] message){
+    public String MSGencoder(byte[] message){
         return new String(message, StandardCharsets.UTF_8);
-    }
-
-    public boolean loggedIn(){
-        // check if user is logged
-    }
-
-    
+    }    
 }
