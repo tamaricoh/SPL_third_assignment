@@ -20,6 +20,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
     private HashMap<String, Integer> loggedInUsers = new HashMap<>(); // contain all logged users, // <userName, connectionID>
     private boolean loggedIn = false;
+    private String loggedUser = "";
 
     private TftpFileOutputStream fileToWrite; // if we want to write more then 512 bytes.
     private TftpFileInputStream fileToRead; // for RRQ and DIRQ
@@ -155,14 +156,14 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         String userName = new String(message, StandardCharsets.UTF_8);
         synchronized(connections) { // so the client wouldn't get another packet
             if (this.loggedInUsers.containsKey(userName)){
-                // send error - user already logged
+                // send error - user already logged ----------------------------------
                 return;
             }
             loggedInUsers.put(userName, this.connectionId);
+            this.loggedUser = userName;
             this.loggedIn = true;
-            // send ACK
+            // send ACK packet-------------------------
         }
-        
     }
 
     public void DELRQoperation(byte[] message) {
@@ -174,16 +175,17 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DISCoperation(byte[] message) {
-
+        synchronized(connections) { // so the client wouldn't get another packet
+            if (loggedIn) { // if user is not logged - do nothing
+                loggedInUsers.remove(this.loggedUser);
+                shouldTerminate = true;
+                // send ACK packet-------------------------
+            }
+            return;
+        }
     }
 
     public String MSGdecoder(byte[] message){
         return new String(message, StandardCharsets.UTF_8);
-    }
-
-    public boolean loggedIn(){
-        // check if user is logged
-    }
-
-    
+    }    
 }
