@@ -89,14 +89,16 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     return;
                 }
 
-                if (!loggedIn){ // if client is not logged, he can't make operations
-                    // send error ---------------------------------
+                if (loggedIn){ // if user is not logged - do nothing
+                    this.fileToRead = fileStream;
+                    // create the data packet-------------------------
+                    // send it ---------------------------------
                     return;
                 }
+                // send error ---------------------------------
+                return;
 
-                this.fileToRead = fileStream;
-                // create the data packet-------------------------
-                // send it ---------------------------------
+                
             }
         }
 
@@ -117,14 +119,15 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     return;
                 }
 
-                if (!loggedIn){ // if client is not logged, he can't make operations
-                    // send error ---------------------------------
+                if (loggedIn){ // if user is not logged - do nothing
+                    this.fileToWrite = fileWrite; // if we want to write more then 512 bytes.
+                    // create the ACK packet-------------------------
+                    // send it ---------------------------------
                     return;
                 }
-
-                this.fileToWrite = fileWrite; // if we want to write more then 512 bytes.
-                // create the ACK packet-------------------------
-                // send it ---------------------------------
+                // send error ---------------------------------
+                return;
+                
             
             }
         }
@@ -150,7 +153,37 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DIRQoperation(byte[] message) {
+        synchronized(connections) { // so the client wouldn't get another packet
+            if (loggedIn) { // if user is not logged - do nothing
+                synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
+                    // SOME NOTES BEFORE IMPLEMENTATION:
+                    // 1) this should build a DATA packet, so we need to know the packet size.
+                    // 2) byte 0 is dividing the files names
 
+                    int packetSize = 0;
+                    File[] files = new File(pathToCurrDir).listFiles();
+                    for(File file : files) {
+                        packetSize += file.getName().getBytes().length + 1; // + 1 because byte 0 is dividing the files
+                    }
+
+                    byte[] data = new byte[packetSize]; // this is the 4th part ot the data packet
+                    // create the data bytes array :
+                    int index = 0; // loop while index < packetSize
+                    for(File file : files){
+                        for (byte byteB : file.getName().getBytes()){
+                            data[index] = byteB;
+                            index++;
+                        }
+                        data[index] = '\0'; // because byte 0 is dividing the files
+                        index++;
+                    }
+
+                    // create DATA packet----------------------
+                    // SEND IT
+                }
+            }
+            return;
+        }
     }
 
     public void LOGRQoperation(byte[] message) {
@@ -177,18 +210,20 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     return;
                 }
 
-                if (!loggedIn) { // if client is not logged, he can't make operations
-                    // send error ---------------------------------
+                if (loggedIn) { // if client is not logged, he can't make operations
+                    
+                    if (!file.delete()){
+                        // send error ---------------------------------
+                        return;
+                    }
+    
+                    // create the ACK packet-------------------------
+                    // send it ---------------------------------
                     return;
                 }
-
-                if (!file.delete()){
-                    // send error ---------------------------------
-                    return;
-                }
-
-                // create the ACK packet-------------------------
-                // send it ---------------------------------
+                // send error ---------------------------------
+                return;
+                
             }
         }
     }
