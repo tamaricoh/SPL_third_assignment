@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.srv.Connections;
+import bgu.spl.net.impl.tftp.TftpEnum;
 
 public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
@@ -15,10 +17,13 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private Connections<byte[]> connections;
     private boolean shouldTerminate = false; // for the shouldTerminate() func to return
     private String pathToCurrDir = "./Flies";
+
+    private HashMap<String, Integer> loggedInUsers = new HashMap<>(); // contain all logged users, // <userName, connectionID>
     private boolean loggedIn = false;
 
     private TftpFileOutputStream fileToWrite; // if we want to write more then 512 bytes.
     private TftpFileInputStream fileToRead; // for RRQ and DIRQ
+
 
     @Override
     public void start(int connectionId, Connections<byte[]> connections) {
@@ -147,7 +152,17 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void LOGRQoperation(byte[] message) {
-        this.loggedIn = true;
+        String userName = new String(message, StandardCharsets.UTF_8);
+        synchronized(connections) { // so the client wouldn't get another packet
+            if (this.loggedInUsers.containsKey(userName)){
+                // send error - user already logged
+                return;
+            }
+            loggedInUsers.put(userName, this.connectionId);
+            this.loggedIn = true;
+            // send ACK
+        }
+        
     }
 
     public void DELRQoperation(byte[] message) {
@@ -164,6 +179,10 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
     public String MSGdecoder(byte[] message){
         return new String(message, StandardCharsets.UTF_8);
+    }
+
+    public boolean loggedIn(){
+        // check if user is logged
     }
 
     
