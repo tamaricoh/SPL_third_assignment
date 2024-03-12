@@ -22,6 +22,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private HashMap<String, Integer> loggedInUsers = new HashMap<>(); // contain all logged users, // <userName, connectionID>
     private boolean loggedIn = false;
     private String loggedUser = "";
+    private TftpPacketGenerator packetGenerator = new TftpPacketGenerator();
+    private byte[] packet;
 
     private TftpFileOutputStream fileToWrite; // where to write the data after a WRQ operation
 
@@ -85,7 +87,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     // Creating a file in current working directories
                     fileStream = new TftpFileInputStream(fileName);
                 } catch (FileNotFoundException e){
-                    // send error ---------------------------------
+                    byte[] errorNum = {0, 1};
+                    packet = packetGenerator.generateError(errorNum, message);
+                    // send pack ---------------------------------
                     return;
                 }
 
