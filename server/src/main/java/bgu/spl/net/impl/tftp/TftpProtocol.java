@@ -23,8 +23,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private boolean loggedIn = false;
     private String loggedUser = "";
 
-    private TftpFileOutputStream fileToWrite; // if we want to write more then 512 bytes.
-    private TftpFileInputStream fileToRead; // for RRQ and DIRQ
+    private TftpFileOutputStream fileToWrite; // where to write the data after a WRQ operation
 
 
     @Override
@@ -77,12 +76,13 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         throw new UnsupportedOperationException("Unimplemented method 'shouldTerminate'");
     } 
 
-    public void RRQoperation(byte[] message) {
+    public void RRQoperation(byte[] message) { // Download file from the server Files folder to current working directory
         synchronized(connections){ // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
                 String fileName = pathToCurrDir+MSGencoder(message);
                 TftpFileInputStream fileStream;
                 try {
+                    // Creating a file in current working directories
                     fileStream = new TftpFileInputStream(fileName);
                 } catch (FileNotFoundException e){
                     // send error ---------------------------------
@@ -90,26 +90,24 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 }
 
                 if (loggedIn){ // if user is not logged - do nothing
-                    this.fileToRead = fileStream;
                     // create the data packet-------------------------
                     // send it ---------------------------------
                     return;
                 }
                 // send error ---------------------------------
                 return;
-
-                
             }
         }
 
     }
 
-    public void WRQoperation(byte[] message) {
+    public void WRQoperation(byte[] message) { // Upload File from current working directory to the server
         synchronized(connections){ // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
                 String fileName = pathToCurrDir+MSGencoder(message);
                 TftpFileOutputStream fileWrite;
                 try {
+                    // Check if file exist
                     fileWrite = new TftpFileOutputStream(fileName);
                 } catch (FileNotFoundException e){ 
                     // send error ---------------------------------
@@ -120,7 +118,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 }
 
                 if (loggedIn){ // if user is not logged - do nothing
-                    this.fileToWrite = fileWrite; // if we want to write more then 512 bytes.
+                    this.fileToWrite = fileWrite; // where to write the data after a WRQ operation
                     // create the ACK packet-------------------------
                     // send it ---------------------------------
                     return;
@@ -134,33 +132,28 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DATAoperation(byte[] message) {
-        if (fileToRead == null) { // we didnt ask for RRQ or DIRQ operations
+        // Write to the file that we open in WRQ
+        if (fileToWrite == null) { // we didnt ask for WRQ operation. so theres no file to write to.
             return;
         }
         short Size =  ( short ) ((( short ) message [0]) << 8 | ( short ) ( message [1]) );
-        short numOfBlocks =  ( short ) ((( short ) message [2]) << 8 | ( short ) ( message [3]) );
-        byte[] data = Arrays.copyOfRange(message, 4, Size+4);
-        // freate file, write to it, create ACK packet--------------------------------------
-        // this.fileToRead = null;
+        short numOfBlocks =  ( short ) ((( short ) message [2]) << 8 | ( short ) ( message [3]) ); // send ACK on this block
+        byte[] data = Arrays.copyOfRange(message, 4, Size+4);    
 
-        // if (fileWriter == null) {
-        //     return;
-        // }
+        Boolean done = false;
+        try {
+            //done = fileToWrite.Write(data);
+            // Write to fileToWrite -----------------------------
+        } catch (IOException e) {
+            fileToWrite = null;
+            return;
+        };
 
-        // short packetSize = TFTPPacket.bytesToShort(msgBody[0], msgBody[1]);
-        // short blockNum = TFTPPacket.bytesToShort(msgBody[2], msgBody[3]);
-        // byte[] data = Arrays.copyOfRange(msgBody, 4, packetSize+4);
-
-        // Boolean done = false;
-        // try {
-        //     done = fileWriter.Write(data);
-        // } catch (IOException e) {fileWriter = null; return;};
-
-        // connections.send(connectionId, TFTPPacket.ACKFor(blockNum));
-        // if (done) {
-        //     sendBCAST(fileWriter.GetFileName(), true);
-        //     fileWriter = null;
-        // }
+        // send ACK
+        if (done) {
+            // send BCAST
+            fileToWrite = null;
+        }
     }
 
     public void ACKoperation(byte[] message) {
@@ -237,7 +230,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     }
     
                     // create the ACK packet-------------------------
-                    // send it ---------------------------------
+                    // send it --------------------------------- Bcast
                     return;
                 }
                 // send error ---------------------------------
