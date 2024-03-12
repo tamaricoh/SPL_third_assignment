@@ -20,32 +20,32 @@ public class TftpEnum {
         return TFTPRequest.NONE;
     }
 
-    // public static int decodeOperationEnum(TFTPRequest opCode) {
-    //     switch (opCode) {
-    //         case RRQ:
-    //             return 1;
-    //         case WRQ:
-    //             return 2;
-    //         case DATA:
-    //             return 3;
-    //         case ACK:
-    //             return 4;
-    //         case ERROR:
-    //             return 5;
-    //         case DIRQ:
-    //             return 6;
-    //         case LOGRQ:
-    //             return 7;
-    //         case DELRQ:
-    //             return 8;
-    //         case BCAST:
-    //             return 9;
-    //         case DISC:
-    //             return 10;
-    //         default:
-    //             return -1;
-    //     }
-    // }
+    public static int decodeOperationEnum(TFTPRequest opCode) {
+        switch (opCode) {
+            case RRQ:
+                return 1;
+            case WRQ:
+                return 2;
+            case DATA:
+                return 3;
+            case ACK:
+                return 4;
+            case ERROR:
+                return 5;
+            case DIRQ:
+                return 6;
+            case LOGRQ:
+                return 7;
+            case DELRQ:
+                return 8;
+            case BCAST:
+                return 9;
+            case DISC:
+                return 10;
+            default:
+                return -1;
+        }
+    }
     
     public static TFTPRequest decodeOperationCode(short opCode) {
         switch (opCode) {
