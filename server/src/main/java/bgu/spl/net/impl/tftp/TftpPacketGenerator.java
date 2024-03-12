@@ -10,33 +10,27 @@ public class TftpPacketGenerator{
     public TftpPacketGenerator(){}
     
 
-    private byte[] generateACk(byte blockNum){ 
+    private byte[] generateACk(byte[] blockNum){ 
         byte[] ACKpacket = new byte[4];
         ACKpacket[0] = 0;
         ACKpacket[1] = 4;
-        ACKpacket[2] = 0;
-        ACKpacket[3] = blockNum;
+        fill()
         return ACKpacket;
     }
 
-    private byte[] generateError(byte errorNum, String ErrorStr){       // Data, BCAST
-        byte[] msg = ErrorStr.getBytes(encode);
-        byte[] ERRORpacket = new byte[msg.length + 5];
-        ERRORpacket[0] = 0; ERRORpacket[1] = 5; ERRORpacket[2] = 0; ERRORpacket[3] = errorNum;
-        fill(ERRORpacket, msg, 4, ERRORpacket.length-2); ERRORpacket[ERRORpacket.length-1] = 0;
+    private byte[] generateError(byte[] errorNum, byte[] Errormsg){       // Data, BCAST
+        byte[] ERRORpacket = new byte[Errormsg.length + 5];
+        ERRORpacket[0] = 0; ERRORpacket[1] = 5; ERRORpacket[2] = errorNum[0]; ERRORpacket[3] = errorNum[1];
+        fill(ERRORpacket, Errormsg, 4, ERRORpacket.length-2); ERRORpacket[ERRORpacket.length-1] = 0;
         return ERRORpacket;
         
     }
 
 
     /**
-     * 
-     * @param added - is equel to1 if true 0 otherwish
-     * 
-     * 
-     * 
+     * @param added - is equel to1 if true 0 otherwish 
      */
-    private byte[] generateBCAST(byte added, String fileName){ 
+    private byte[] generateBCAST(byte[] added, byte[] fileName){ 
         byte[] msg = fileName.getBytes(encode);
         byte[] BCASTpacket = new byte[msg.length + 4];
         BCASTpacket[0] = 0; BCASTpacket[1] = 9; BCASTpacket[2] = added;
