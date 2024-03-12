@@ -12,7 +12,7 @@ public class TftpFileOutputStream {
     public TftpFileOutputStream(String filePath) throws FileNotFoundException, FileAlreadyExistsException{
         File file = new File(filePath);
         if (file.exists()) {
-            throw new FileAlreadyExistsException(filePath);
+            throw new FileAlreadyExistsException(filePath);         //this part needs to be sent to the client..
         }
 
         this.fileStream = new FileOutputStream(file);
