@@ -234,7 +234,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 }
                 // send error ---------------------------------
                 return;
-                
             }
         }
     }
