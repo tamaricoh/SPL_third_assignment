@@ -13,5 +13,9 @@ public class TftpFileInputStream {
             throw e;
         }
     }
+
+    public FileInputStream getFile(){
+        return filePath;
+    }
     
 }
