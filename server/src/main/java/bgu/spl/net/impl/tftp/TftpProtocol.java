@@ -142,12 +142,11 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
         Boolean done = false;
         try {
-            //done = fileToWrite.Write(data);
-            // Write to fileToWrite -----------------------------
+            done = fileToWrite.writeToFile(data);
         } catch (IOException e) {
             fileToWrite = null;
             return;
-        };
+        }
 
         // send ACK
         if (done) {
