@@ -131,6 +131,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 if (loggedIn){ // if user is not logged - do nothing
                     this.fileToWrite = fileWrite; // where to write the data after a WRQ operation
                     this.fileName = fileName;
+                    // send ACK -> start transfer the file
                     byte[] blockNum = {0, 0};
                     packet = packetGenerator.generateACk(blockNum);
                     connections.send(connectionId, packet);
@@ -180,7 +181,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void ERRORoperation(byte[] message) {
-
+        return;
     }
 
     public void DIRQoperation(byte[] message) {
@@ -229,7 +230,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             loggedInUsers.put(userName, this.connectionId);
             this.loggedUser = userName;
             this.loggedIn = true;
-            // send ACK packet-------------------------
+            byte[] blockNum = {0, 0};
+            packet = packetGenerator.generateACk(blockNum);
+            connections.send(connectionId, packet);
         }
     }
 
@@ -239,29 +242,40 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 String fileName = pathToCurrDir+MSGencoder(message);
                 File file = new File(fileName);
                 if (!file.exists()) {
-                    // send error --------------------------------- file not found
+                    // send error file not found
+                    byte[] errorNum = {0, 1};
+                    packet = packetGenerator.generateError(errorNum, message);
+                    connections.send(connectionId, packet);
                     return;
                 }
 
                 if (loggedIn) { // if client is not logged, he can't make operations
                     
                     if (!file.delete()){
-                        // send error ---------------------------------
+                        byte[] errorNum = {0, 2};
+                        packet = packetGenerator.generateError(errorNum, message);
+                        connections.send(connectionId, packet);
                         return;
                     }
     
-                    // create the ACK packet-------------------------
-                    // send it --------------------------------- Bcast
+                    byte[] blockNum = {0, 0};
+                    packet = packetGenerator.generateACk(blockNum);
+                    connections.send(connectionId, packet);
+                    byte[] transfer = {0, 0};
+                    packet = packetGenerator.generateBCAST(transfer, fileName.getBytes());
+                    connections.send(connectionId, packet);
                     return;
                 }
-                // send error ---------------------------------
+                byte[] errorNum = {0, 6};
+                packet = packetGenerator.generateError(errorNum, message);
+                connections.send(connectionId, packet);
                 return;
             }
         }
     }
 
     public void BCASToperation(byte[] message) {
-
+        return;
     }
 
     public void DISCoperation(byte[] message) {
@@ -269,8 +283,13 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             if (loggedIn) { // if user is not logged - do nothing
                 loggedInUsers.remove(this.loggedUser);
                 shouldTerminate = true;
-                // send ACK packet-------------------------
+                byte[] blockNum = {0, 0};
+                packet = packetGenerator.generateACk(blockNum);
+                connections.send(connectionId, packet);
             }
+            byte[] errorNum = {0, 6};
+            packet = packetGenerator.generateError(errorNum, message);
+            connections.send(connectionId, packet);
             return;
         }
     }
