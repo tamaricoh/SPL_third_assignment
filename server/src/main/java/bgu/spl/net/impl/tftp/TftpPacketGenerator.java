@@ -47,7 +47,6 @@ public class TftpPacketGenerator{
         DATApacket[4] = blockNum[0]; DATApacket[5] = blockNum[1];
         fill(DATApacket, data, 6, DATApacket.length-1);
         return DATApacket;
-        
     }
 
     private void fill(byte[] a, byte[] b, int start, int end){

@@ -22,8 +22,11 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private HashMap<String, Integer> loggedInUsers = new HashMap<>(); // contain all logged users, // <userName, connectionID>
     private boolean loggedIn = false;
     private String loggedUser = "";
+    private TftpPacketGenerator packetGenerator = new TftpPacketGenerator();
+    private byte[] packet;
 
     private TftpFileOutputStream fileToWrite; // where to write the data after a WRQ operation
+    private String fileName = "";
 
 
     @Override
@@ -85,7 +88,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     // Creating a file in current working directories
                     fileStream = new TftpFileInputStream(fileName);
                 } catch (FileNotFoundException e){
-                    // send error ---------------------------------
+                    byte[] errorNum = {0, 1};
+                    packet = packetGenerator.generateError(errorNum, message);
+                    connections.send(connectionId, packet);
                     return;
                 }
 
@@ -94,7 +99,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     // send it ---------------------------------
                     return;
                 }
-                // send error ---------------------------------
+                byte[] errorNum = {0, 6};
+                packet = packetGenerator.generateError(errorNum, message);
+                connections.send(connectionId, packet);
                 return;
             }
         }
@@ -110,20 +117,28 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     // Check if file exist
                     fileWrite = new TftpFileOutputStream(fileName);
                 } catch (FileNotFoundException e){ 
-                    // send error ---------------------------------
+                    byte[] errorNum = {0, 1};
+                    packet = packetGenerator.generateError(errorNum, message);
+                    connections.send(connectionId, packet);
                     return;
                 } catch(FileAlreadyExistsException e) {
-                    // send error ---------------------------------
+                    byte[] errorNum = {0, 5};
+                    packet = packetGenerator.generateError(errorNum, message);
+                    connections.send(connectionId, packet);
                     return;
                 }
 
                 if (loggedIn){ // if user is not logged - do nothing
                     this.fileToWrite = fileWrite; // where to write the data after a WRQ operation
-                    // create the ACK packet-------------------------
-                    // send it ---------------------------------
+                    this.fileName = fileName;
+                    byte[] blockNum = {0, 0};
+                    packet = packetGenerator.generateACk(blockNum);
+                    connections.send(connectionId, packet);
                     return;
                 }
-                // send error ---------------------------------
+                byte[] errorNum = {0, 6};
+                packet = packetGenerator.generateError(errorNum, message);
+                connections.send(connectionId, packet);
                 return;
                 
             
@@ -148,9 +163,14 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             return;
         }
 
-        // send ACK
+        // this block shold be for numOfBlocks ----------------------??????
+        byte[] blockNum = {0, 0};
+        packet = packetGenerator.generateACk(blockNum);
+        connections.send(connectionId, packet);
         if (done) {
-            // send BCAST
+            byte[] transfer = {0, 1};
+            packet = packetGenerator.generateBCAST(transfer, fileName.getBytes());
+            connections.send(connectionId, packet);
             fileToWrite = null;
         }
     }
@@ -201,7 +221,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         String userName = MSGencoder(message);
         synchronized(connections) { // so the client wouldn't get another packet
             if (this.loggedInUsers.containsKey(userName)){
-                // send error - user already logged ----------------------------------
+                byte[] errorNum = {0, 7};
+                packet = packetGenerator.generateError(errorNum, message);
+                connections.send(connectionId, packet);
                 return;
             }
             loggedInUsers.put(userName, this.connectionId);
