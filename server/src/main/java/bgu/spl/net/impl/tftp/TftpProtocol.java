@@ -40,7 +40,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         // SOME NOTES BEFORE IMPLEMENTATION:
         // 1) msg must be from length 2 at least (for the OPcode)
         // 2) for each operation, we will implement different func
-
+        System.out.println("Tamar: "+"process");
         if (message.length < 2){
             throw new UnsupportedOperationException("No operation number");
         }
@@ -61,6 +61,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
             case DIRQ:
                 DIRQoperation(message);
             case LOGRQ:
+                System.out.println("Tamar: "+"LOGRQ");
                 LOGRQoperation(message);
             case DELRQ:
                 DELRQoperation(message);
@@ -75,8 +76,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
     @Override
     public boolean shouldTerminate() {
-        // TODO implement this
-        throw new UnsupportedOperationException("Unimplemented method 'shouldTerminate'");
+        return shouldTerminate;
     } 
 
     public void RRQoperation(byte[] message) { // Download file from the server Files folder to current working directory
@@ -90,7 +90,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 } catch (FileNotFoundException e){
                     byte[] errorNum = {0, 1};
                     packet = packetGenerator.generateError(errorNum, message);
-                    connections.send(connectionId, packet);
+                    // connections.send(connectionId, packet);
                     return;
                 }
 
@@ -101,7 +101,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 }
                 byte[] errorNum = {0, 6};
                 packet = packetGenerator.generateError(errorNum, message);
-                connections.send(connectionId, packet);
+                // connections.send(connectionId, packet);
                 return;
             }
         }
@@ -119,12 +119,12 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 } catch (FileNotFoundException e){ 
                     byte[] errorNum = {0, 1};
                     packet = packetGenerator.generateError(errorNum, message);
-                    connections.send(connectionId, packet);
+                    // connections.send(connectionId, packet);
                     return;
                 } catch(FileAlreadyExistsException e) {
                     byte[] errorNum = {0, 5};
                     packet = packetGenerator.generateError(errorNum, message);
-                    connections.send(connectionId, packet);
+                    // connections.send(connectionId, packet);
                     return;
                 }
 
@@ -133,13 +133,13 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     this.fileName = fileName;
                     // send ACK -> start transfer the file
                     byte[] blockNum = {0, 0};
-                    packet = packetGenerator.generateACk(blockNum);
-                    connections.send(connectionId, packet);
+                    // packet = packetGenerator.generateACk(blockNum);
+                    // connections.send(connectionId, packet);
                     return;
                 }
                 byte[] errorNum = {0, 6};
                 packet = packetGenerator.generateError(errorNum, message);
-                connections.send(connectionId, packet);
+                // connections.send(connectionId, packet);
                 return;
                 
             
@@ -166,12 +166,12 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
         // this block shold be for numOfBlocks ----------------------??????
         byte[] blockNum = {0, 0};
-        packet = packetGenerator.generateACk(blockNum);
-        connections.send(connectionId, packet);
+        // packet = packetGenerator.generateACk(blockNum);
+        // connections.send(connectionId, packet);
         if (done) {
             byte[] transfer = {0, 1};
             packet = packetGenerator.generateBCAST(transfer, fileName.getBytes());
-            connections.send(connectionId, packet);
+            // connections.send(connectionId, packet);
             fileToWrite = null;
         }
     }
@@ -219,20 +219,24 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void LOGRQoperation(byte[] message) {
+        System.out.println("Tamar: "+"LOGRQoperation");
         String userName = MSGencoder(message);
+        System.out.println("Tamar: "+"create userName");
         synchronized(connections) { // so the client wouldn't get another packet
+            System.out.println("Tamar: "+"synchronized(connections)");
             if (this.loggedInUsers.containsKey(userName)){
+                System.out.println("Tamar: "+"user already logged");
                 byte[] errorNum = {0, 7};
                 packet = packetGenerator.generateError(errorNum, message);
                 connections.send(connectionId, packet);
                 return;
             }
+            System.out.println("Tamar: "+"logging in");
             loggedInUsers.put(userName, this.connectionId);
             this.loggedUser = userName;
             this.loggedIn = true;
-            byte[] blockNum = {0, 0};
-            packet = packetGenerator.generateACk(blockNum);
-            connections.send(connectionId, packet);
+            // packet = TftpPacket.ACKFor((short)0);
+            connections.send(connectionId, TftpPacket.ACKFor((short)0));
         }
     }
 
@@ -245,7 +249,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     // send error file not found
                     byte[] errorNum = {0, 1};
                     packet = packetGenerator.generateError(errorNum, message);
-                    connections.send(connectionId, packet);
+                    // connections.send(connectionId, packet);
                     return;
                 }
 
@@ -254,21 +258,21 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                     if (!file.delete()){
                         byte[] errorNum = {0, 2};
                         packet = packetGenerator.generateError(errorNum, message);
-                        connections.send(connectionId, packet);
+                        // connections.send(connectionId, packet);
                         return;
                     }
     
                     byte[] blockNum = {0, 0};
-                    packet = packetGenerator.generateACk(blockNum);
-                    connections.send(connectionId, packet);
+                    // packet = packetGenerator.generateACk(blockNum);
+                    // connections.send(connectionId, packet);
                     byte[] transfer = {0, 0};
                     packet = packetGenerator.generateBCAST(transfer, fileName.getBytes());
-                    connections.send(connectionId, packet);
+                    // connections.send(connectionId, packet);
                     return;
                 }
                 byte[] errorNum = {0, 6};
                 packet = packetGenerator.generateError(errorNum, message);
-                connections.send(connectionId, packet);
+                // connections.send(connectionId, packet);
                 return;
             }
         }
@@ -284,37 +288,18 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 loggedInUsers.remove(this.loggedUser);
                 shouldTerminate = true;
                 byte[] blockNum = {0, 0};
-                packet = packetGenerator.generateACk(blockNum);
-                connections.send(connectionId, packet);
+                // packet = packetGenerator.generateACk(blockNum);
+                // connections.send(connectionId, packet);
             }
             byte[] errorNum = {0, 6};
             packet = packetGenerator.generateError(errorNum, message);
-            connections.send(connectionId, packet);
+            // connections.send(connectionId, packet);
             return;
         }
     }
 
     public String MSGencoder(byte[] message){
         return new String(message, StandardCharsets.UTF_8);
-    }
-
-    private byte[] getDataPacket(short blockNum, TftpFileInputStream stream){
-        short size = 0;
-        blockNum++;
-        byte[] data = new byte[512];
-        try{
-            size = stream.read(data);
-        }
-        catch (Exception e) {
-        // TODO: handle exception
-        }
-        if(size == -1){
-            return null;
-        }
-        byte[] size_bytes = new byte []{(byte) (size >> 8) , ( byte ) (size & 0xff)};
-        byte[] blockNum_bytes = new byte []{(byte) (blockNum >> 8) , ( byte ) (blockNum & 0xff)};
-        
-        return packetGenerator.generateDATA(size_bytes, blockNum_bytes, data);
-
-    }
+    }    
 }
+
