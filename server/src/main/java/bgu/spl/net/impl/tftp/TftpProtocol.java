@@ -296,5 +296,25 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
     public String MSGencoder(byte[] message){
         return new String(message, StandardCharsets.UTF_8);
-    }    
+    }
+
+    private byte[] getDataPacket(short blockNum, TftpFileInputStream stream){
+        short size = 0;
+        blockNum++;
+        byte[] data = new byte[512];
+        try{
+            size = stream.read(data);
+        }
+        catch (Exception e) {
+        // TODO: handle exception
+        }
+        if(size == -1){
+            return null;
+        }
+        byte[] size_bytes = new byte []{(byte) (size >> 8) , ( byte ) (size & 0xff)};
+        byte[] blockNum_bytes = new byte []{(byte) (blockNum >> 8) , ( byte ) (blockNum & 0xff)};
+        
+        return packetGenerator.generateDATA(size_bytes, blockNum_bytes, data);
+
+    }
 }
