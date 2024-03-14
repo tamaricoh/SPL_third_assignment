@@ -20,7 +20,7 @@ public class TftpEnum {
         return TFTPRequest.NONE;
     }
 
-    public static int decodeOperationEnum(TFTPRequest opCode) {
+    public static short decodeOperationEnum(TFTPRequest opCode) {
         switch (opCode) {
             case RRQ:
                 return 1;

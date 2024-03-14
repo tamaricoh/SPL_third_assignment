@@ -28,7 +28,7 @@ public abstract class BaseServer<T> implements Server<T> {
 
     @Override
     public void serve() {
-
+        ServerConnections connections = new ServerConnections<>();
         try (ServerSocket serverSock = new ServerSocket(port)) {
 			System.out.println("Server started");
 
@@ -41,7 +41,8 @@ public abstract class BaseServer<T> implements Server<T> {
                 BlockingConnectionHandler<T> handler = new BlockingConnectionHandler<>(
                         clientSock,
                         encdecFactory.get(),
-                        protocolFactory.get());
+                        protocolFactory.get(),
+                        connections);
 
                 execute(handler);
             }

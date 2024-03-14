@@ -11,6 +11,7 @@ public class TftpPacketGenerator{
     
 
     public byte[] generateACk(byte[] blockNum){ 
+        System.out.println("Tamar: "+"generateACk");
         byte[] ACKpacket = new byte[4];
         ACKpacket[0] = 0; ACKpacket[1] = 4;
         fill(ACKpacket, blockNum,2,3);
