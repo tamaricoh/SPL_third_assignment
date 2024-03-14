@@ -4,6 +4,7 @@ package bgu.spl.net.impl.tftp;
 
 
 import java.io.IOException;
+// import bgu.spl.net.impl.tftp.TftpReader;
 
 public class TftpDataPacketGenerate {
     private short currBlockNum;

@@ -3,7 +3,7 @@ package bgu.spl.net.impl.tftp;
 // change alllllllllllllllllllllllllllllllllllllllllllllllll
 
 
-public class TftpDataPacket {
+public class TftpDataPacket{
 
     public static final int lim = 512;
     private byte[] packet;
