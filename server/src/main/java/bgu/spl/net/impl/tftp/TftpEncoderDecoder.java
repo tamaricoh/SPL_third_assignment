@@ -60,7 +60,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     }
 
     @Override
-    public byte[] encode(byte[] message) {              //TO BE IMPLEMENTED, this function is supposed to do somthing right?
+    public byte[] encode(byte[] message) {
         System.out.println("Tamar: " + "encode");
         return message;
     }
@@ -73,8 +73,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         msgToBytes = new byte[1 << 10];
         BytesCounter = 0;
         OperationCode = -1;
-        opCode = TFTPRequest.NONE;
+        opCode = TftpEnum.create();
         // returns
         return msg;
     }
+    
+
 }

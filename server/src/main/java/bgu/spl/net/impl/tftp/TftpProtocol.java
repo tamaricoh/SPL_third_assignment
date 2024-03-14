@@ -17,9 +17,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private int connectionId;
     private Connections<byte[]> connections;
     private boolean shouldTerminate = false; // for the shouldTerminate() func to return
-    private String pathToCurrDir = "./Flies";
+    private String pathToCurrDir = "./Flies/";
 
-    private HashMap<String, Integer> loggedInUsers = new HashMap<>(); // contain all logged users, // <userName, connectionID>
+    private HashMap<String, Integer> loggedInUsers; // contain all logged users, // <userName, connectionID>
     private boolean loggedIn = false;
     private String loggedUser = "";
     private TftpPacketGenerator packetGenerator = new TftpPacketGenerator();
@@ -33,6 +33,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     public void start(int connectionId, Connections<byte[]> connections) {
         this.connectionId = connectionId;
         this.connections = connections;
+        this.loggedInUsers = new HashMap<>();
     }
 
     @Override
@@ -50,25 +51,34 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         switch (OperationCode) {
             case RRQ:
                 RRQoperation(message);
+                break;
             case WRQ:
                 WRQoperation(message);
+                break;
             case DATA:
                 DATAoperation(message);
+                break;
             case ACK:
                 ACKoperation(message);
+                break;
             case ERROR:
                 ERRORoperation(message);
+                break;
             case DIRQ:
                 DIRQoperation(message);
+                break;
             case LOGRQ:
-                System.out.println("Tamar: "+"LOGRQ");
                 LOGRQoperation(message);
+                break;
             case DELRQ:
                 DELRQoperation(message);
+                break;
             case BCAST:
                 BCASToperation(message);
+                break;
             case DISC:
                 DISCoperation(message);
+                break;
             default:
                 return;
         }
@@ -76,7 +86,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
     @Override
     public boolean shouldTerminate() {
-        return shouldTerminate;
+        //--------------------------------------------------------------
+        return false;
     } 
 
     public void RRQoperation(byte[] message) { // Download file from the server Files folder to current working directory
@@ -219,60 +230,60 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void LOGRQoperation(byte[] message) {
+        // TO FIX - user can log twice
         System.out.println("Tamar: "+"LOGRQoperation");
         String userName = MSGencoder(message);
         System.out.println("Tamar: "+"create userName");
         synchronized(connections) { // so the client wouldn't get another packet
             System.out.println("Tamar: "+"synchronized(connections)");
-            if (this.loggedInUsers.containsKey(userName)){
+            System.out.println("Tamar: "+"user name ::::::::::::: "+userName);
+            boolean tamar = loggedInUsers.containsKey(userName);
+            System.out.println(tamar);
+            if (loggedInUsers.containsKey(userName)){ // this.loggedUser != "" || 
                 System.out.println("Tamar: "+"user already logged");
-                byte[] errorNum = {0, 7};
-                packet = packetGenerator.generateError(errorNum, message);
-                connections.send(connectionId, packet);
+                connections.send(connectionId,TftpPacket.ERRORFor(TftpPacket.ERROR_USER_ALREADY_LOGGED_IN, "User/Client already logged in"));
                 return;
             }
             System.out.println("Tamar: "+"logging in");
             loggedInUsers.put(userName, this.connectionId);
+            for (String key : loggedInUsers.keySet()) {
+                System.out.println("Tamar: " + key);
+            }
             this.loggedUser = userName;
             this.loggedIn = true;
-            // packet = TftpPacket.ACKFor((short)0);
             connections.send(connectionId, TftpPacket.ACKFor((short)0));
         }
     }
 
     public void DELRQoperation(byte[] message) {
+        // working ===========================================================================
+        System.out.println("Tamar: "+"DELRQoperation");
         synchronized(connections) { // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
                 String fileName = pathToCurrDir+MSGencoder(message);
+                System.out.println("Tamar: "+"fileName "+fileName);
                 File file = new File(fileName);
                 if (!file.exists()) {
+                    System.out.println("Tamar: "+"file does not exists");
                     // send error file not found
-                    byte[] errorNum = {0, 1};
-                    packet = packetGenerator.generateError(errorNum, message);
-                    // connections.send(connectionId, packet);
+                    connections.send(connectionId, TftpPacket.ERRORFor(TftpPacket.ERROR_FILE_NOT_FOUND, "File not found"));
                     return;
                 }
 
                 if (loggedIn) { // if client is not logged, he can't make operations
                     
                     if (!file.delete()){
-                        byte[] errorNum = {0, 2};
-                        packet = packetGenerator.generateError(errorNum, message);
-                        // connections.send(connectionId, packet);
+                        connections.send(connectionId, TftpPacket.ERRORFor(TftpPacket.ERROR_FILE_ACCESS_VIOLATION, "deletion could not be resolve"));
                         return;
                     }
-    
-                    byte[] blockNum = {0, 0};
-                    // packet = packetGenerator.generateACk(blockNum);
-                    // connections.send(connectionId, packet);
+                    // send ACK & BCAST
+                    connections.send(connectionId, TftpPacket.ACKFor((short)0));
                     byte[] transfer = {0, 0};
                     packet = packetGenerator.generateBCAST(transfer, fileName.getBytes());
-                    // connections.send(connectionId, packet);
+                    sendBCAST(fileName, false);
                     return;
                 }
-                byte[] errorNum = {0, 6};
-                packet = packetGenerator.generateError(errorNum, message);
-                // connections.send(connectionId, packet);
+                connections.send(connectionId, TftpPacket.ERRORFor(TftpPacket.ERROR_USER_NOT_LOGGED_IN, "user not logged"));
                 return;
             }
         }
@@ -280,6 +291,13 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
 
     public void BCASToperation(byte[] message) {
         return;
+    }
+
+    private void sendBCAST(String filename, Boolean added) {
+        byte[] packet = TftpPacket.BCASTFor(filename, added);
+        for (Integer connID : loggedInUsers.values()) {
+            connections.send(connID, packet);
+        }
     }
 
     public void DISCoperation(byte[] message) {

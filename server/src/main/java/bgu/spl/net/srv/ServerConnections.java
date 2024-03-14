@@ -18,6 +18,7 @@ class ServerConnections<T> implements Connections<T> {
     public boolean send(int connectionId, T msg){                           //sends a message to an existing client returns true if the massege request was sent
         System.out.println("Tamar: "+ "send packet");
         if (!ClientConnections.containsKey(connectionId)) {
+            System.out.println("Tamar: "+ "false");
             return false;
         }
         ClientConnections.get(connectionId).send(msg);

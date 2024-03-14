@@ -70,6 +70,7 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
         synchronized(this) { // Multiple threads can call send() e.g BCAST and ACK
             try {
                 out.write(encdec.encode(msg));
+                System.out.println("Tamar: "+"encoding done");
                 out.flush();
             } catch (IOException e) {
                 e.printStackTrace();
