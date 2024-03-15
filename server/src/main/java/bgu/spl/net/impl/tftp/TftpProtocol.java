@@ -23,7 +23,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     private boolean shouldTerminate = false; // for the shouldTerminate() func to return
     private String pathToCurrDir = "./Flies/";
 
-    private HashMap<String, Integer> loggedInUsers; // contain all logged users, // <userName, connectionID>
+    private static HashMap<String, Integer> loggedInUsers; // contain all logged users, // <userName, connectionID>
     private boolean loggedIn = false;
     private String loggedUser = "";
     private TftpPacketGenerator packetGenerator = new TftpPacketGenerator();
@@ -309,11 +309,10 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         return new String(message, StandardCharsets.UTF_8);
     }    
 
-    private void sendBCAST(String filename, Boolean added) {
-        // ----------------------------- change
-        byte[] packet = TftpPacket.BCASTFor(filename, added);
-        for (Integer connID : loggedInUsers.values()) {
-            connections.send(connID, packet);
+    private void sendBCAST(String fileName, Boolean ifAdd) {
+        byte[] BCASTpacket = TftpPacket.BCASTFor(fileName, ifAdd);
+        for (Integer id : loggedInUsers.values()) { // send each client
+            connections.send(id, BCASTpacket);
         }
     }
 
