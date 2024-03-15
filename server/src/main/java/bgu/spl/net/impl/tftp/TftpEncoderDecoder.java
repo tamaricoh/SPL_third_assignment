@@ -14,9 +14,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
 
     @Override
     public byte[] decodeNextByte(byte nextByte) {
-        System.out.println("Tamar: " + "decodeNextByte");
         if (nextByte == '\0' && TftpEnum.TFTPRequestEndsWithZero(opCode)){ // and the msg needs to end with a zero
-            System.out.println("Tamar: " + "finish and EndsWithZero");
             return returnMSG();
         }
 
@@ -26,25 +24,21 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
 
         // if we are reading the opcode
         if (BytesCounter < 2){
-            System.out.println("Tamar: " + "reading the opcode");
             return null;
         }
 
         // if we can determine the operation
         if (BytesCounter == 2){
-            System.out.println("Tamar: " + "determine the operation");
             OperationCode = ( short ) ((( short ) msgToBytes [0]) << 8 | ( short ) ( msgToBytes [1]) );
         }
 
         // handle operations that ends after 2 bytes (DISC, DIRC, ACK, DATA) -
         opCode = TftpEnum.decodeOperationCode(OperationCode);
         if (opCode == TFTPRequest.DIRQ || opCode == TFTPRequest.DISC){
-            System.out.println("Tamar: " + "DIRQ or DISC");
             return returnMSG();
         }
 
         if (opCode == TFTPRequest.ACK && BytesCounter == 4){
-            System.out.println("Tamar: " + "ACK");
             return returnMSG();
         }
 
