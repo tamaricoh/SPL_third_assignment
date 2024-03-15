@@ -1,8 +1,4 @@
 package bgu.spl.net.impl.tftp;
-
-// change alllllllllllllllllllllllllllllllllllllllllllllllll
-
-
 public class TftpDataPacket{
 
     public static final int lim = 512;
@@ -11,13 +7,15 @@ public class TftpDataPacket{
 
     public TftpDataPacket(short blockNum){
         packet =  new byte[1 << 10];
+        dataAdded = 0;
+
         byte[] opBytes = enumToBytes(TFTPRequest.DATA);
-        byte[] sizeBytes = shortToBytes((short)0);
-        byte[] blockNumBytes = shortToBytes(blockNum);
         packet[0] = opBytes[0];
         packet[1] = opBytes[1];
-        packet[2] = sizeBytes[0];
-        packet[3] = sizeBytes[1];
+
+        setPacketSize();
+
+        byte[] blockNumBytes = shortToBytes(blockNum);
         packet[4] = blockNumBytes[0];
         packet[5] = blockNumBytes[1];
         dataAdded = 0;
@@ -50,10 +48,10 @@ public class TftpDataPacket{
     }
 
     public Boolean IsEmpty() {
-        return dataAdded == 0;
+        return (dataAdded == 0);
     }
 
-    public byte[] GetRawPacket() {
+    public byte[] GetBasePacket() {
         byte[] output = new byte[6+dataAdded];
         for(int i = 0; i< 6+dataAdded; i++) {
             output[i] = packet[i];

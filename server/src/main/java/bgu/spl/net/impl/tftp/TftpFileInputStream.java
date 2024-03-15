@@ -2,7 +2,7 @@ package bgu.spl.net.impl.tftp;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-public class TftpFileInputStream{
+public class TftpFileInputStream implements TftpReader{
 
     private FileInputStream stream;
 
@@ -20,7 +20,7 @@ public class TftpFileInputStream{
         try {
             size = (short) stream.read(data,0,512);
         } catch (Exception e) {
-            // TODO: handle exception
+            return -1;
         }
         return size;
     }

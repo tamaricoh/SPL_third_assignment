@@ -1,97 +1,95 @@
 package bgu.spl.net.impl.tftp;
 
-
-// change alllllllllllllllllllllllllllllllllllllllllllllllll
-
-
 public class TftpPacket {
-    public static final short OPCODE_RRQ = 1;
-      public static final short OPCODE_WRQ = 2;
-      public static final short OPCODE_DATA = 3;
-      public static final short OPCODE_ACK = 4;
-      public static final short OPCODE_ERROR = 5;
-      public static final short OPCODE_DIRQ = 6;
-      public static final short OPCODE_LOGRQ = 7;
-      public static final short OPCODE_DELRQ = 8;
-      public static final short OPCODE_BCAST = 9;
-      public static final short OPCODE_DISC = 10;
+      public static final short RRQ = 1;
+      public static final short WRQ = 2;
+      public static final short DATA = 3;
+      public static final short ACK = 4;
+      public static final short ERROR = 5;
+      public static final short DIRQ = 6;
+      public static final short LOGRQ = 7;
+      public static final short DELRQ = 8;
+      public static final short BCAST = 9;
+      public static final short DISC = 10;
       
-      public static final short ERROR_FILE_NOT_FOUND = 1;
-      public static final short ERROR_FILE_ACCESS_VIOLATION = 2;
-      public static final short ERROR_ILLEGAL_OP = 4;
-      public static final short ERROR_FILE_ALREADY_EXISTS = 5;
-      public static final short ERROR_USER_NOT_LOGGED_IN = 6;
-      public static final short ERROR_USER_ALREADY_LOGGED_IN = 7;
+      public static final short ERR_FileNotFound = 1;
+      public static final short ERR_FileAccessViolation = 2;
+      public static final short ERR_OP = 4;
+      public static final short ERR_FileAlreadyExists = 5;
+      public static final short ERR_UserNotLogged = 6;
+      public static final short ERR_UserAlreadyLogged = 7;
 
       public static short OPCodeFromBytes(byte b1, byte b2) {
-        return bytesToShort(b1,b2);
+        return (short) (((short) b1 & 0xFF) << 8 | (short) (b2 & 0xFF));
       }
 
-      public static short bytesToShort(byte b1, byte b2)
-      {
-          return (short) (((short) b1 & 0xFF) << 8 | (short) (b2 & 0xFF));
-      }
+      // public static short bytesToShort(byte b1, byte b2)
+      // {
+      //     return (short) (((short) b1 & 0xFF) << 8 | (short) (b2 & 0xFF));
+      // }
 
       public static byte[] shortToBytes(short s)
       {
-          byte[] res = new byte[2];
-          res[0] = (byte)((s >> 8) & 0xFF);
-          res[1] = (byte)(s & 0xFF);
-          return res;
+          byte[] output = new byte[2];
+          output[0] = (byte)((s >> 8) & 0xFF);
+          output[1] = (byte)(s & 0xFF);
+          return output;
       }
 
-      public static byte[] ACKFor(short blockNumber) {
-        byte[] res = new byte[4];
+      public static byte[] ACK(short blockNumber) {
+        byte[] output = new byte[4];
 
-        byte[] opBytes = shortToBytes(OPCODE_ACK);
+        byte[] opBytes = shortToBytes(ACK);
+        output[0] = opBytes[0];
+        output[1] = opBytes[1];
+
         byte[] blockBytes = shortToBytes(blockNumber);
+        output[2] = blockBytes[0];
+        output[3] = blockBytes[1];
 
-        res[0] = opBytes[0];
-        res[1] = opBytes[1];
-        res[2] = blockBytes[0];
-        res[3] = blockBytes[1];
-
-        return res;
+        return output;
       }
 
-      public static byte[] ERRORFor(short errCode, String msg) {
-        byte[] msgBytes = msg.getBytes();
-        byte[] res = new byte[4 + msgBytes.length + 1];
+      public static byte[] ERROR(short errCode, String message) {
+        byte[] messageBytes = message.getBytes();
+        byte[] output = new byte[4 + messageBytes.length + 1];
 
-        byte[] opBytes = shortToBytes(OPCODE_ERROR);
+        byte[] opBytes = shortToBytes(ERROR);
+        output[0] = opBytes[0];
+        output[1] = opBytes[1];
+
         byte[] errCodeBytes = shortToBytes(errCode);
-        res[0] = opBytes[0];
-        res[1] = opBytes[1];
-        res[2] = errCodeBytes[0];
-        res[3] = errCodeBytes[1];
+        output[2] = errCodeBytes[0];
+        output[3] = errCodeBytes[1];
 
-        for(int i = 0; i < msgBytes.length; i++) {
-          res[i+4] = msgBytes[i];
+        // message
+        for(int i = 0; i < messageBytes.length; i++) {
+          output[i+4] = messageBytes[i];
         }
 
-        res[res.length - 1] = '\0';
+        output[output.length - 1] = '\0';
 
-        return res;
+        return output;
       }
 
-      public static byte[] BCASTFor(String filename, Boolean added) {
-        byte[] filenameBytes = filename.getBytes();
-        byte[] res = new byte[2 + 1 + filenameBytes.length + 1];
+      public static byte[] BCAST(String filename, Boolean added) {
+        byte[] fileNameBytes = filename.getBytes();
+        byte[] output = new byte[2 + 1 + fileNameBytes.length + 1];
 
-        byte[] opBytes = shortToBytes(OPCODE_BCAST);
-        res[0] = opBytes[0];
-        res[1] = opBytes[1];
-        res[2] = 0;
+        byte[] opBytes = shortToBytes(BCAST);
+        output[0] = opBytes[0];
+        output[1] = opBytes[1];
+        output[2] = 0;
         if (added) {
-          res[2] = 1;
+          output[2] = 1;
         }
 
-        for(int i = 0; i < filenameBytes.length; i++) {
-          res[i+3] = filenameBytes[i];
+        for(int i = 0; i < fileNameBytes.length; i++) {
+          output[i+3] = fileNameBytes[i];
         }
 
-        res[res.length - 1] = '\0';
+        output[output.length - 1] = '\0';
 
-        return res;
+        return output;
       }
 }

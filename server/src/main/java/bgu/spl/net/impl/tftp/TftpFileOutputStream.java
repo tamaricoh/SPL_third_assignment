@@ -31,7 +31,7 @@ public class TftpFileOutputStream {
 
         // check for ERROR
         File fileCheck = new File(filePath);
-        if (!fileCheck.createNewFile()){
+        if (!fileCheck.exists()){
             throw new IOException("file in this name does not exists");
         }
         return true;
