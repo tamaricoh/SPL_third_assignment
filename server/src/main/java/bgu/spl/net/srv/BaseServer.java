@@ -1,7 +1,6 @@
 package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessageEncoderDecoder;
-import bgu.spl.net.api.MessagingProtocol;
 import bgu.spl.net.api.BidiMessagingProtocol;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -28,7 +27,7 @@ public abstract class BaseServer<T> implements Server<T> {
 
     @Override
     public void serve() {
-        ServerConnections connections = new ServerConnections<>();
+        ConnectionsImpl connections = new ConnectionsImpl<>();
         try (ServerSocket serverSock = new ServerSocket(port)) {
 			System.out.println("Server started");
 

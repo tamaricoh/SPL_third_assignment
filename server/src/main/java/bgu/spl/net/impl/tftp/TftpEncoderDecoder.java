@@ -3,7 +3,6 @@ package bgu.spl.net.impl.tftp;
 import java.util.Arrays;
 
 import bgu.spl.net.api.MessageEncoderDecoder;
-// import bgu.spl.net.impl.tftp.TftpEnum;
 
 public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     private byte[] msgToBytes = new byte[1 << 10];
@@ -45,7 +44,6 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         if (opCode == TFTPRequest.DATA && BytesCounter >= 6){
             short DATAnumOfBytes = ( short ) ((( short ) msgToBytes [2]) << 8 | ( short ) ( msgToBytes [3]) );
             if (BytesCounter - DATAnumOfBytes == 6){
-                System.out.println("Tamar: " + "DATA");
                 return returnMSG();
             }
         }
@@ -55,12 +53,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
 
     @Override
     public byte[] encode(byte[] message) {
-        System.out.println("Tamar: " + "encode");
         return message;
     }
 
     private byte[] returnMSG(){
-        System.out.println("Tamar: " + "returnMSG");
         // copy the msg
         byte[] msg = Arrays.copyOfRange(msgToBytes, 0, BytesCounter);
         // resets the fields

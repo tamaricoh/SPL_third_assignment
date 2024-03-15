@@ -3,24 +3,23 @@ package bgu.spl.net.impl.tftp;
 import java.io.IOException;
 
 public class TftpDataReader implements TftpReader {
-    byte[] source;
-    int currIndex;
+    byte[] data;
+    int indexPlace;
 
-    public TftpDataReader(byte[] source) {
-        this.source = source;
-        this.currIndex = 0;
+    public TftpDataReader(byte[] data) {
+        this.data = data;
+        this.indexPlace = 0; // beggining
     }
 
-    public short read(byte[] dst) throws IOException {
-        if (currIndex == source.length) {
-            return -1;
+    public short read(byte[] d) throws IOException {
+        if (indexPlace == data.length) {
+            return -1; // end reading
         }
-
         short bytesRead = 0;
-        while (bytesRead < dst.length && currIndex < source.length) {
-            dst[bytesRead] = source[currIndex];
+        while (bytesRead < d.length && indexPlace < data.length) {
+            d[bytesRead] = data[indexPlace];
             bytesRead++;
-            currIndex++;
+            indexPlace++;
         }
         return bytesRead;
     }

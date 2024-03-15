@@ -20,7 +20,7 @@ public class TftpFileInputStream implements TftpReader{
         try {
             size = (short) stream.read(data,0,512);
         } catch (Exception e) {
-            // TODO: handle exception
+            return -1;
         }
         return size;
     }
