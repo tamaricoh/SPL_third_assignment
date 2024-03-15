@@ -45,7 +45,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         // SOME NOTES BEFORE IMPLEMENTATION:
         // 1) msg must be from length 2 at least (for the OPcode)
         // 2) for each operation, we will implement different func
-        System.out.println("Tamar: "+"process");
         if (message.length < 2){
             throw new UnsupportedOperationException("No operation number");
         }
@@ -57,7 +56,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 RRQoperation(message);
                 break;
             case WRQ:
-                System.out.println("Tamar: "+"WRQ");
                 WRQoperation(message);
                 break;
             case DATA:
@@ -95,17 +93,13 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     } 
 
     public void RRQoperation(byte[] message) { // Download file from the server Files folder to current working directory
-        // working ===========================================================================
-        System.out.println("Tamar: "+"RRQoperation");
         synchronized(connections){ // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
                 String fileName = pathToCurrDir+MSGencoder(message);
-                System.out.println("Tamar: "+"fileName "+fileName);
                 TftpFileInputStream fileStream;
                 try {
                     // Creating a file in current working directories
                     fileStream = new TftpFileInputStream(fileName);
-                    System.out.println("Tamar: "+"found file");
                 } catch (FileNotFoundException e){
                     connections.send(connectionId, TftpPacket.ERRORFor(TftpPacket.ERROR_FILE_NOT_FOUND, "File not found"));
                     return;
@@ -124,14 +118,12 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void WRQoperation(byte[] message) { // Upload File from current working directory to the server
-        // working ===========================================================================
         synchronized(connections){ // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
                 String fileName = pathToCurrDir+MSGencoder(message);
                 TftpFileOutputStream fileWrite;
                 try {
                     // Check if file exist
-                    System.out.println("Tamar: "+"file exists");
                     fileWrite = new TftpFileOutputStream(fileName);
                 } catch (FileNotFoundException e){ 
                     connections.send(connectionId, TftpPacket.ERRORFor(TftpPacket.ERROR_FILE_NOT_FOUND, "File not found"));
@@ -142,12 +134,10 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 }
 
                 if (loggedIn){ // if user is not logged - do nothing
-                    System.out.println("Tamar: "+"user is logged");
                     this.fileToWrite = fileWrite; // where to write the data after a WRQ operation
                     this.fileName = fileName;
                     // send ACK -> start transfer the file
                     connections.send(connectionId, TftpPacket.ACKFor((short)0));
-                    System.out.println("Tamar: "+"sent ACK");
                     return;
                 }
                 connections.send(connectionId, TftpPacket.ERRORFor(TftpPacket.ERROR_USER_NOT_LOGGED_IN, "user not logged"));
@@ -159,30 +149,22 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DATAoperation(byte[] message) {
-        // working ===========================================================================
-        // Write to the file that we open in WRQ
-        System.out.println("Tamar: "+"GOT DATA");
         if (fileToWrite == null) { // we didnt ask for WRQ operation. so theres no file to write to.
             return;
         }
         short Size =  ( short ) ((( short ) message [0]) << 8 | ( short ) ( message [1]) );
         short numOfBlocks =  ( short ) ((( short ) message [2]) << 8 | ( short ) ( message [3]) ); // send ACK on this block
         byte[] data = Arrays.copyOfRange(message, 4, Size+4);    
-        System.out.println("Tamar: "+"NUM OF BLOCKS "+numOfBlocks);
         Boolean done = false;
         try {
             done = fileToWrite.writeToFile(data);
-            System.out.println("Tamar: "+"WRITE TO FILE");
         } catch (IOException e) {
-            System.out.println("Tamar: "+"IOException");
             fileToWrite = null;
             return;
         }
 
         connections.send(connectionId, TftpPacket.ACKFor(numOfBlocks));
-        System.out.println("Tamar: "+"SENT ACK");
         if (done) {
-            System.out.println("Tamar: "+"done sending");
             sendBCAST(this.fileName, true);
             this.fileToWrite = null;
             this.fileName = "";
@@ -200,7 +182,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DIRQoperation(byte[] message) {
-        // TO FIX ---------------------------------------------------------------------------------
         synchronized(connections) { // so the client wouldn't get another packet
             if (loggedIn) { // if user is not logged - do nothing
                 synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
@@ -226,11 +207,8 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                         index++;
                     }
 
-                    // A BUG
-                    // TftpFileInputStream source = new TftpFileInputStream(data); 
-                    // find a way to implement this and send it to TftpDataPacketGenerate
-                    // maybe via interface TftpReader and class TftpDataReader
-                    // this.dataPacketGenerator = new TftpDataPacketGenerate(source);
+                    TftpDataReader source = new TftpDataReader(data); 
+                    this.dataPacketGenerator = new TftpDataPacketGenerate(source);
                     sendData(); // send once, the next will come from acks if needed.
                 }
             }
@@ -253,7 +231,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DELRQoperation(byte[] message) {
-        // working ===========================================================================
         synchronized(connections) { // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
                 String fileName = pathToCurrDir+MSGencoder(message);
@@ -289,7 +266,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     
 
     public void DISCoperation(byte[] message) {
-        // working ===========================================================================
         synchronized(connections) { // so the client wouldn't get another packet
             if (loggedIn) { // if user is not logged - do nothing
                 loggedInUsers.remove(this.loggedUser);
@@ -307,26 +283,24 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }    
 
     private void sendBCAST(String fileName, Boolean ifAdd) {
-        System.out.println("Tamar: "+"sendBCAST");
         byte[] BCASTpacket = TftpPacket.BCASTFor(fileName, ifAdd);
         for (Integer id : loggedInUsers.values()) { // send each client
-            System.out.println("Tamar: "+"send to client with id : "+id);
             connections.send(id, BCASTpacket);
         }
     }
 
     private void sendData() {
-        // ----------------------------- change
         if (dataPacketGenerator == null) {
             return;
         }
-
         try {
-            byte[] packet = dataPacketGenerator.NextPacket();
-            if (packet != null) {
-                connections.send(connectionId, packet);
+            byte[] dataPacket = dataPacketGenerator.NextPacket();
+            if (dataPacket != null) {
+                connections.send(this.connectionId, dataPacket);
             }
-        } catch (IOException e) {dataPacketGenerator = null;};
+        } catch (IOException e) {
+            dataPacketGenerator = null;
+        };
 
     }
 }

@@ -8,10 +8,10 @@ import java.io.IOException;
 
 public class TftpDataPacketGenerate {
     private short currBlockNum;
-    private TftpFileInputStream data;
+    private TftpReader data;
     private int lastReadAmount;
 
-    public TftpDataPacketGenerate(TftpFileInputStream data){
+    public TftpDataPacketGenerate(TftpReader data){
         currBlockNum = 1;
         this.data = data;
     }
