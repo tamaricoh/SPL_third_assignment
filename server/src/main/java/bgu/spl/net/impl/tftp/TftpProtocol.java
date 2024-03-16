@@ -117,11 +117,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
         synchronized(connections){ // so the client wouldn't get another packet
             synchronized(pathToCurrDir) { // so current directory wouldn't change during operation
                 String fileName = pathToCurrDir+MSGencoder(message);
-                System.out.println("Tamar: "+fileName);
                 TftpFileOutputStream fileWrite;
                 try {
                     // Check if file exist
-                    System.out.println("Tamar: "+"file create");
                     fileWrite = new TftpFileOutputStream(fileName);
                 } catch (FileNotFoundException e){ 
                     connections.send(connectionId, TftpPacket.ERROR(TftpPacket.ERR_FileNotFound, "File not found"));
@@ -132,12 +130,10 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
                 }
 
                 if (loggedIn){ // if user is not logged - do nothing
-                    System.out.println("Tamar: "+"user logged");
                     this.fileToWrite = fileWrite; // where to write the data after a WRQ operation
                     this.fileName = fileName;
                     // send ACK -> start transfer the file
                     connections.send(connectionId, TftpPacket.ACK((short)0));
-                    System.out.println("Tamar: "+"sent ACK");
                     return;
                 }
                 connections.send(connectionId, TftpPacket.ERROR(TftpPacket.ERR_UserNotLogged, "user not logged"));
@@ -149,7 +145,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]>  {
     }
 
     public void DATAoperation(byte[] message) {
-        System.out.println("Tamar: "+"DATAoperation");
         if (fileToWrite == null) { // we didnt ask for WRQ operation. so theres no file to write to.
             return;
         }

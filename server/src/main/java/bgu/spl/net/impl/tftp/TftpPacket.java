@@ -22,12 +22,7 @@ public class TftpPacket {
       public static short OPCodeFromBytes(byte b1, byte b2) {
         return (short) (((short) b1 & 0xFF) << 8 | (short) (b2 & 0xFF));
       }
-
-      // public static short bytesToShort(byte b1, byte b2)
-      // {
-      //     return (short) (((short) b1 & 0xFF) << 8 | (short) (b2 & 0xFF));
-      // }
-
+      
       public static byte[] shortToBytes(short s)
       {
           byte[] output = new byte[2];
